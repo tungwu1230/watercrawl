@@ -1,5 +1,5 @@
 import logging
-from typing import Literal
+from typing import Literal, Optional
 
 from .engine import WatercrawlEngine
 from .extractor import WatercrawlExtractor, extract_links
@@ -16,15 +16,6 @@ class WatercrawlApp:
         self.engine = WatercrawlEngine(engine)
         self.extractor = WatercrawlExtractor()
         self.transformer = WatercrawlTransformer()
-
-    @staticmethod
-    def __url_filter(base_url: str, urls: List[str]) -> List[str]:
-        abs_urls = absolute_urls(base_url, urls)
-        rm_dup_urls = remove_duplicates(abs_urls)
-        rm_inv_urls = remove_invalid_urls(rm_dup_urls)
-        filtered = remain_same_domain_urls(base_url, rm_inv_urls)
-        filtered.sort()
-        return filtered
 
     def scrape(self, url: str, only_main_content: bool = True, to_markdown: bool = True) -> Document:
         docs = self.engine.run([url])
@@ -51,25 +42,38 @@ class WatercrawlApp:
         transformed = self.transformer.transform_documents(docs, transform_format)
         return transformed
 
-    def crawl(self, start_url: str, limit: int = 10, only_main_content: bool = True,
-              to_markdown: bool = True) -> List[Document]:
-        """autocrawl """
+    def crawl(self, start_url: str, limit: int = 10,
+              only_main_content: bool = True, to_markdown: bool = True,
+              include_rule: Optional[str] = None, exclude_rule: Optional[str] = None) -> List[Document]:
+        """Autocrawl """
         start_doc = self.engine.run([start_url])[0]
         html = start_doc.page_content
 
         base_url = get_base_url(start_url)
         page_links = extract_links(html)
 
-        filtered = self.__url_filter(base_url, page_links)
-        docs = self.engine.run(filtered[:limit])
+        urls = absolute_urls(base_url, page_links)
+        urls = remove_duplicates(urls)
+        urls = remove_invalid_urls(urls)
+        urls = remain_same_domain_urls(base_url, urls)
+
+        if include_rule:
+            urls = includes_urls(urls, include_rule)
+
+        if exclude_rule:
+            urls = excludes_urls(urls, exclude_rule)
+
+        docs = self.engine.run(urls[:limit])
         docs = [start_doc] + docs
 
         docs = self.extractor.extract_documents(docs, "metadata")
+
         if only_main_content:
             docs = self.extractor.extract_documents(docs, "main_content")
         if to_markdown:
             transform_format: Literal["markdown", "text"] = "markdown"
         else:
             transform_format: Literal["markdown", "text"] = "text"
+
         transformed = self.transformer.transform_documents(docs, transform_format)
         return transformed
