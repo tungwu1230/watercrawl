@@ -1,8 +1,8 @@
+import json
 import os
-from typing import List, Literal, Optional
-from uuid import uuid4
+from typing import List, Literal, Optional, Iterable
 from urllib.parse import urlparse
-
+from uuid import uuid4
 
 from ..typed import Document
 
@@ -32,3 +32,19 @@ def save_documents(documents: List[Document],
                 f.write(document.page_content)
 
     print(f"Saved {len(documents)} documents to {output_path}")
+
+
+def doc2json(doc: Document) -> dict:
+    return vars(doc)
+
+
+def save_documents_to_json(docs: Iterable[Document], output_path: str) -> None:
+    dict_docs = [doc2json(doc) for doc in docs]
+    with open(output_path, "w") as f:
+        json.dump(dict_docs, f, indent=4, ensure_ascii=True)
+
+
+def load_documents_from_json(input_path: str) -> List[Document]:
+    with open(input_path, "r") as f:
+        dict_docs = json.load(f)
+    return [Document(**doc) for doc in dict_docs]
