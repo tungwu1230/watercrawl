@@ -5,7 +5,6 @@ from typing import Iterable, List, Literal
 from tqdm import tqdm
 
 from .config import default_header_template
-
 from .typed import Document
 
 logger = logging.getLogger(__name__)
