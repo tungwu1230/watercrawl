@@ -10,5 +10,3 @@ default_header_template = {
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
 }
-
-template = """URL Source: {source}\n\nContent:\n{content}"""

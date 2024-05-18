@@ -1,12 +1,11 @@
 import logging
 from typing import Literal
 
-from .config import template
 from .engine import WatercrawlEngine
 from .extractor import WatercrawlExtractor, extract_links
+from .toolkit.url_filter import *
 from .transformer import WatercrawlTransformer
 from .typed import Document
-from watercrawl.toolkit.url_filter import *
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +16,6 @@ class WatercrawlApp:
         self.engine = WatercrawlEngine(engine)
         self.extractor = WatercrawlExtractor()
         self.transformer = WatercrawlTransformer()
-
-    @staticmethod
-    def __apply_template(documents: List[Document]) -> List[Document]:
-        for document in documents:
-            document.page_content = template.format(source=document.metadata["source"], content=document.page_content)
-        return documents
 
     @staticmethod
     def __url_filter(base_url: str, urls: List[str]) -> List[str]:
@@ -43,8 +36,7 @@ class WatercrawlApp:
         else:
             transform_format: Literal["markdown", "text"] = "text"
         transformed = self.transformer.transform_documents(docs, transform_format)
-        template_transformed = self.__apply_template(transformed)
-        return template_transformed[0]
+        return transformed[0]
 
     def scrape_urls(self, urls: List[str], only_main_content: bool = True, to_markdown: bool = True) -> List[Document]:
         """Scrape multiple URLs."""
@@ -57,8 +49,7 @@ class WatercrawlApp:
         else:
             transform_format: Literal["markdown", "text"] = "text"
         transformed = self.transformer.transform_documents(docs, transform_format)
-        template_transformed = self.__apply_template(transformed)
-        return template_transformed
+        return transformed
 
     def crawl(self, start_url: str, limit: int = 10, only_main_content: bool = True,
               to_markdown: bool = True) -> List[Document]:
@@ -81,5 +72,4 @@ class WatercrawlApp:
         else:
             transform_format: Literal["markdown", "text"] = "text"
         transformed = self.transformer.transform_documents(docs, transform_format)
-        template_transformed = self.__apply_template(transformed)
-        return template_transformed
+        return transformed
