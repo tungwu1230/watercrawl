@@ -1,3 +1,5 @@
+import fnmatch
+import re
 from typing import List
 
 from urllib.parse import urljoin, urlparse
@@ -9,7 +11,9 @@ def get_base_url(url: str) -> str:
 
 
 def remove_duplicates(urls: List[str]) -> List[str]:
-    return list(dict.fromkeys(urls))
+    no_duplicates = list(dict.fromkeys(urls))
+    no_duplicates.sort()
+    return no_duplicates
 
 
 def remove_invalid_urls(urls: List[str]) -> List[str]:
@@ -17,16 +21,20 @@ def remove_invalid_urls(urls: List[str]) -> List[str]:
 
 
 def absolute_urls(base_url: str, urls: List[str]) -> List[str]:
-    return [urljoin(base_url, url, allow_fragments=False) for url in urls]
+    return [urljoin(base_url, url, allow_fragments=False) for url in filter(lambda url: isinstance(url, str), urls)]
 
 
 def remain_same_domain_urls(base_url, urls: List[str]) -> List[str]:
     return [url for url in urls if base_url in url]
 
 
-def excludes_urls(urls: List[str], excludes: str) -> List[str]:
-    pass
+def includes_urls(urls: List[str], pattern: str) -> List[str]:
+    regex = fnmatch.translate(pattern)
+    pattern = re.compile(regex)
+    return [url for url in filter(lambda url: isinstance(url, str), urls) if pattern.match(urlparse(url).path)]
 
 
-def includes_urls(urls: List[str], excludes: str) -> List[str]:
-    pass
+def excludes_urls(urls: List[str], pattern: str) -> List[str]:
+    regex = fnmatch.translate(pattern)
+    pattern = re.compile(regex)
+    return [url for url in filter(lambda url: isinstance(url, str), urls) if not pattern.match(urlparse(url).path)]
