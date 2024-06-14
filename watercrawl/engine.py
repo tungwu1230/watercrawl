@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from typing import Iterable, List, Literal
 
 from tqdm import tqdm
@@ -15,25 +16,27 @@ class WatercrawlEngine:
     def __init__(self, engine: Literal["requests", "playwright"] = "requests"):
         self.engine = engine
 
-    def run(self, urls: List[str]) -> List[Document]:
+    def run(self, urls: List[str], delay: int = 0) -> List[Document]:
         if self.engine == "requests":
-            return list(self.run_requests(urls))
+            return list(self.run_requests(urls, delay))
         if self.engine == "playwright":
-            return list(self.run_playwright(urls))
+            return list(self.run_playwright(urls, delay))
 
     @staticmethod
-    def run_requests(urls: List[str]) -> Iterable[Document]:
+    def run_requests(urls: List[str], delay: int = 0) -> Iterable[Document]:
         for url in tqdm(urls):
             resp = scrape_with_requests(url)
             yield Document(page_content=resp,
                            metadata={"source": url})
+            time.sleep(delay)
 
     @staticmethod
-    def run_playwright(urls: List[str]) -> Iterable[Document]:
+    def run_playwright(urls: List[str], delay: int = 0) -> Iterable[Document]:
         for url in tqdm(urls):
             resp = asyncio.run(ascrape_with_playwright(url))
             yield Document(page_content=resp,
                            metadata={"source": url})
+            time.sleep(delay)
 
 
 def scrape_with_requests(url: str) -> str:
@@ -45,10 +48,8 @@ def scrape_with_requests(url: str) -> str:
 
 def route_intercept(route):
     if route.request.resource_type == "image":
-        # print(f"Blocking the image request to: {route.request.url}")
         return route.abort()
     if "google" in route.request.url:
-        # print(f"blocking {route.request.url} as it contains Google")
         return route.abort()
     return route.continue_()
 
